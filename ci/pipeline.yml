@@ -242,7 +242,7 @@ resources:
     type: git
     source:
       uri:         git@github.com:cloudfoundry-incubator/bosh-vsphere-cpi-release.git
-      branch:      master
+      branch:      wip/103637582-multi-env
       private_key: {{github_deployment_key__bosh-vsphere-cpi-release}}
 
   - name: version-semver
