@@ -46,7 +46,6 @@ jobs:
           run:
             path: echo
             args: ["Finished setting up container."]
-          tags: ["vsphere"]
         
   - name: build-candidate
     serial: true
@@ -243,7 +242,7 @@ resources:
     type: git
     source:
       uri:         git@github.com:cloudfoundry-incubator/bosh-vsphere-cpi-release.git
-      branch:      master
+      branch:      test-vsphere-6-env
       private_key: {{github_deployment_key__bosh-vsphere-cpi-release}}
 
   - name: version-semver
