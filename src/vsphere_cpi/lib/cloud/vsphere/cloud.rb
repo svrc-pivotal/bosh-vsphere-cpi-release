@@ -195,7 +195,10 @@ module VSphereCloud
 
         persistent_disks = vm.persistent_disks
         unless persistent_disks.empty?
-          vm.detach_disks(persistent_disks)
+          original_disk_cids = vm.detach_disks(persistent_disks)
+          original_disk_cids.each do |disk_cid|
+            @datacenter.remove_disk_attachment(disk_cid)
+          end
         end
 
         # Delete env.iso and VM specific files managed by the director
@@ -292,6 +295,7 @@ module VSphereCloud
         disk = @datacenter.find_disk(disk_cid)
         disk = @datacenter.ensure_disk_is_accessible_to_vm(disk, vm)
         disk_config_spec = vm.attach_disk(disk)
+        @datacenter.add_disk_attachment(vm_cid, disk_cid)
         add_disk_to_agent_env(vm, disk, disk_config_spec.device.unit_number)
       end
     end
@@ -306,6 +310,7 @@ module VSphereCloud
 
         delete_disk_from_agent_env(vm, disk_cid)
         vm.detach_disks([disk])
+        @datacenter.remove_disk_attachment(disk_cid)
       end
     end
 
@@ -333,6 +338,7 @@ module VSphereCloud
         @logger.info("Deleting disk: #{disk_cid}")
         disk = @datacenter.find_disk(disk_cid)
         client.delete_disk(@datacenter.mob, disk.path)
+        @datacenter.remove_disk_attachment(disk_cid)
 
         @logger.info('Finished deleting disk')
       end

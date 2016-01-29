@@ -238,12 +238,15 @@ module VSphereCloud
         config = Vim::Vm::ConfigSpec.new
         config.device_change = []
 
+        original_disk_cids = []
+
         virtual_disks.each do |virtual_disk|
           @logger.info("Detaching: #{virtual_disk.backing.file_name}")
           config.device_change << Resources::VM.create_delete_device_spec(virtual_disk)
 
           disk_property = get_vapp_property_by_key(virtual_disk.key)
           unless disk_property.nil?
+            original_disk_cids << disk_property.id
             if has_persistent_disk_property_mismatch?(virtual_disk) && !@client.disk_path_exists?(@mob, disk_property.value)
               @logger.info('Persistent disk was moved: moving disk to expected location')
               disks_to_move << virtual_disk
@@ -262,6 +265,7 @@ module VSphereCloud
           @client.delete_persistent_disk_property_from_vm(self, disk.key)
         end
         @logger.debug('Finished deleting persistent disk properties from vm')
+        original_disk_cids
       end
 
       def move_disks_to_old_path(disks_to_move)

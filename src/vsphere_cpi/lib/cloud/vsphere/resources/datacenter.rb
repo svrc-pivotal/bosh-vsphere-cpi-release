@@ -127,6 +127,14 @@ module VSphereCloud
         @client.create_disk(mob, datastore, disk_cid, @disk_path, size_in_mb, disk_type)
       end
 
+      def add_disk_attachment(vm_cid, disk_cid)
+        @client.set_custom_field(mob, disk_cid, vm_cid)
+      end
+
+      def remove_disk_attachment(disk_cid)
+        @client.remove_custom_field_def(disk_cid, mob.class)
+      end
+
       def find_disk(disk_cid)
         @logger.debug("Looking for disk #{disk_cid} in datastores: #{persistent_datastores}")
         persistent_datastores.each do |_, datastore|
@@ -143,6 +151,29 @@ module VSphereCloud
           if !disk.nil?
             @logger.debug("disk #{disk_cid} found in: #{datastore}")
             return disk
+          end
+        end
+
+        @logger.debug("disk #{disk_cid} not found in all datastores, searching VM attachments")
+        vm_cid = @client.find_custom_field_value(mob, disk_cid)
+        unless vm_cid.nil?
+          vm_mob = @client.find_vm_by_name(self, vm_cid)
+          unless vm_mob.nil?
+            @logger.debug("disk attachment found with #{vm_cid}")
+            vm = Resources::VM.new(vm_cid, vm_mob, @client, @logger)
+
+            virtual_disk = vm.disk_by_original_cid(disk_cid)
+            unless virtual_disk.nil?
+              disk_path = virtual_disk.backing.file_name
+              datastore_name, disk_folder, disk_file = /\[(.+)\] (.+)\/(.+)\.vmdk/.match(disk_path)[1..3]
+              datastore = all_datastores[datastore_name]
+              disk = @client.find_disk(disk_file, datastore, disk_folder)
+              unless disk.nil?  
+                @logger.debug("disk #{disk_cid} found at new location #{disk.path}")
+                return disk
+              end
+            end
+
           end
         end
 

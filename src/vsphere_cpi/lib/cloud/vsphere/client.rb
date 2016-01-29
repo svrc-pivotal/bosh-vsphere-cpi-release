@@ -313,15 +313,15 @@ module VSphereCloud
     end
 
     def disk_path_exists?(vm_mob, disk_path)
-      match = /\[(.+)\] (.+)\/(.+\.vmdk)/.match(disk_path)
+      datastore_name, disk_folder, disk_file = /\[(.+)\] (.+)\/(.+\.vmdk)/.match(disk_path)[1..3]
       search_spec_details = VimSdk::Vim::Host::DatastoreBrowser::FileInfo::Details.new
       search_spec_details.file_type = true # actually return VmDiskInfos not FileInfos
 
       search_spec = VimSdk::Vim::Host::DatastoreBrowser::SearchSpec.new
       search_spec.details = search_spec_details
-      search_spec.match_pattern = [match[3]]
+      search_spec.match_pattern = [disk_file]
 
-      datastore_path = "[#{match[1]}] #{match[2]}"
+      datastore_path = "[#{datastore_name}] #{disk_folder}"
       @logger.debug("Trying to find disk in : #{datastore_path}")
       vm_disk_infos = wait_for_task(vm_mob.environment_browser.datastore_browser.search(datastore_path, search_spec)).file
       return false if vm_disk_infos.empty?
@@ -413,6 +413,21 @@ module VSphereCloud
           end
         end
       end
+    end
+
+    def find_custom_field_value(mob, name)
+      @fields_manager ||= @service_content.custom_fields_manager
+      custom_fields = mob.available_field
+      field = custom_fields.find do |field|
+        field.name == name
+      end
+      if field.nil?
+        return nil
+      end
+      field_value = mob.value.find do |value|
+        value.key == field.key
+      end
+      field_value.value
     end
 
     def remove_custom_field_def(name, mob_type)
