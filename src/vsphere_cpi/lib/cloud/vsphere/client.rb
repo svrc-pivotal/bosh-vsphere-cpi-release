@@ -151,8 +151,21 @@ module VSphereCloud
     end
 
     def find_vm_by_name(datacenter, vm_name)
-      yield_all_resources_by_name(datacenter, 'VirtualMachine') do |vm_mob, name|
+      yield_all_resources_by_property_path(datacenter, 'VirtualMachine', 'name') do |vm_mob, name|
         if name == vm_name
+          return vm_mob
+        end
+      end
+
+      nil
+    end
+
+    def find_vm_by_disk_cid(datacenter, disk_cid)
+      yield_all_resources_by_property_path(datacenter, 'VirtualMachine', 'config.vAppConfig.property') do |vm_mob, vapp_property_list|
+        has_disk = vapp_property_list.any? do |prop|
+          prop.label == disk_cid
+        end
+        if has_disk
           return vm_mob
         end
       end
@@ -162,7 +175,7 @@ module VSphereCloud
 
     def find_all_stemcell_replicas(datacenter, stemcell_id)
       matches = []
-      yield_all_resources_by_name(datacenter, 'VirtualMachine') do |vm_mob, name|
+      yield_all_resources_by_property_path(datacenter, 'VirtualMachine', 'name') do |vm_mob, name|
         if name =~ Regexp.new(stemcell_id)
           matches << vm_mob
         end
@@ -173,7 +186,7 @@ module VSphereCloud
 
     def find_all_stemcell_replicas_in_datastore(datacenter, stemcell_id, datastore_name)
       matches = []
-      yield_all_resources_by_name(datacenter, 'VirtualMachine') do |vm_mob, name|
+      yield_all_resources_by_property_path(datacenter, 'VirtualMachine', 'name') do |vm_mob, name|
         if name =~ Regexp.new(stemcell_id)
           vm_datastore = @cloud_searcher.get_property(vm_mob,
             Vim::VirtualMachine, 'datastore', ensure_all: true)
@@ -496,10 +509,10 @@ module VSphereCloud
       filter_spec
     end
 
-    def yield_all_resources_by_name(datacenter, type)
+    def yield_all_resources_by_property_path(datacenter, type, path)
       raise 'Requires a vSphere object type' if type.nil?
       # Collect all the 'name' attributes of all VMs in the datacenter
-      vm_filter_spec = create_filter_spec(datacenter, type, ['name'])
+      vm_filter_spec = create_filter_spec(datacenter, type, [path])
       ro = VimSdk::Vmodl::Query::PropertyCollector::RetrieveOptions.new
       result = @service_content.property_collector.retrieve_properties_ex([vm_filter_spec], ro)
 
