@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'bosh_cpi'
   s.add_dependency 'membrane',    '~>1.1.0'
   s.add_dependency 'builder',     '~>3.1.4'
-  s.add_dependency 'nokogiri',    '~>1.6.6'
+  s.add_dependency 'nokogiri',    '=1.6.6.2'
   s.add_dependency 'httpclient',  '=2.7.1'
   s.add_dependency 'mono_logger', '~>1.1.0'
 end

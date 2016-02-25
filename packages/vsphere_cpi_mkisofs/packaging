@@ -2,31 +2,48 @@
 # abort script on any command that exit with a non zero value
 set -e
 
-tar xvf vsphere_cpi_mkisofs/smake-1.2.4.tar.bz2
-(
-  cd smake-1.2.4
-  make
-)
-if [[ $? != 0 ]] ; then
-  echo "Cannot install smake"
+mkdir -p $BOSH_INSTALL_TARGET/bin/
+
+# We compiled these binaries from source, then added them as blobs
+
+os_name="$(uname -s)"
+if [ "${os_name}" == "Darwin" ]; then
+  cp vsphere_cpi_mkisofs/mkisofs-osx ${BOSH_INSTALL_TARGET}/bin/mkisofs
+elif [ "${os_name}" == "Linux" ]; then
+  cp vsphere_cpi_mkisofs/mkisofs-linux-x86_64 ${BOSH_INSTALL_TARGET}/bin/mkisofs
+else
+  # compile from source as fallback?
+  >&2 echo "Unknown OS: ${os_name}"
   exit 1
 fi
+chmod +x ${BOSH_INSTALL_TARGET}/bin/mkisofs
 
-
-tar xvf vsphere_cpi_mkisofs/cdrtools-3.00.tar.bz2
-(
-  cd cdrtools-3.00
-  patch -g 0 -f -p0 -i ../vsphere_cpi_mkisofs/patch-include_schily_sha2.h
-  if [[ $? != 0 ]] ; then
-    echo "Cannot patch cdrtools"
-    exit 1
-  fi
-
-  ../smake-1.2.4/psmake/smake
-  mkdir -p $BOSH_INSTALL_TARGET/bin
-  cp -a mkisofs/OBJ/*/mkisofs $BOSH_INSTALL_TARGET/bin/
-)
-if [[ $? != 0 ]] ; then
-  echo "Cannot install mkisofs"
-  exit 1
-fi
+# TODO: move these to a new script in case we need to recompile the binaries
+# tar xvf vsphere_cpi_mkisofs/smake-1.2.4.tar.bz2
+# (
+#   cd smake-1.2.4
+#   make
+# )
+# if [[ $? != 0 ]] ; then
+#   echo "Cannot install smake"
+#   exit 1
+# fi
+#
+#
+# tar xvf vsphere_cpi_mkisofs/cdrtools-3.00.tar.bz2
+# (
+#   cd cdrtools-3.00
+#   patch -g 0 -f -p0 -i ../vsphere_cpi_mkisofs/patch-include_schily_sha2.h
+#   if [[ $? != 0 ]] ; then
+#     echo "Cannot patch cdrtools"
+#     exit 1
+#   fi
+#
+#   ../smake-1.2.4/psmake/smake
+#   mkdir -p $BOSH_INSTALL_TARGET/bin
+#   cp -a mkisofs/OBJ/*/mkisofs $BOSH_INSTALL_TARGET/bin/
+# )
+# if [[ $? != 0 ]] ; then
+#   echo "Cannot install mkisofs"
+#   exit 1
+# fi

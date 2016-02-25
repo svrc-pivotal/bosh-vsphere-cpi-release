@@ -13,4 +13,5 @@ cd ${BOSH_INSTALL_TARGET}
 $bundle_cmd install \
   --local           \
   --no-prune        \
-  --deployment
+  --deployment      \
+  --path ${BOSH_INSTALL_TARGET}/vendor

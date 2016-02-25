@@ -4,3 +4,5 @@ dependencies:
 - vsphere_cpi_ruby
 files:
 - vsphere_cpi/**/*
+- vsphere_cpi_ruby/traveling-ruby-2.1.6-nokogiri-1.6.6.2-linux-x86_64.tar.gz
+- vsphere_cpi_ruby/traveling-ruby-2.1.6-nokogiri-1.6.6.2-osx.tar.gz

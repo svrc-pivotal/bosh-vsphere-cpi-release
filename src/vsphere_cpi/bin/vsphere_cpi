@@ -1,14 +1,17 @@
 #!/usr/bin/env ruby
 
+require 'bundler'
+
+ENV['BUNDLE_PATH'] = 'vendor'
+Bundler.setup(:default)
+
 require 'yaml'
 require 'ostruct'
 require 'logger'
 require 'tmpdir'
 require 'bosh/cpi'
 require 'bosh/cpi/cli'
-require 'bundler'
 
-Bundler.setup(:default)
 require 'cloud'
 require 'cloud/vsphere'
 
@@ -18,7 +21,6 @@ Bosh::Clouds::Config.configure(OpenStruct.new(
   logger: Logger.new(STDERR),
   task_checkpoint: nil,
 ))
-
 
 soap_log = StringIO.new
 

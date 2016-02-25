@@ -27,3 +27,27 @@ vsphere_cpi_ruby/ruby-2.1.7.tar.gz:
   object_id: 08b59102-e51d-470a-a9c2-1d405a2b7675
   sha: e2e195a4a58133e3ad33b955c829bb536fa3c075
   size: 15151458
+vsphere_cpi_mkisofs/mkisofs-linux-x86_64:
+  object_id: 7f61e5c4-0146-4c85-aa78-eb19dd972e52
+  sha: 6d959b5cc256cbbc1d701110b85195883aa670b3
+  size: 468869
+vsphere_cpi_mkisofs/mkisofs-osx:
+  object_id: b6e482f4-6f99-4fa3-9b0c-e35dc8794712
+  sha: 852b7ecf86e2b2e89162aa08aec200fdcca99caa
+  size: 438872
+vsphere_cpi_ruby/traveling-ruby-2.1.6-nokogiri-1.6.6.2-linux-x86_64.tar.gz:
+  object_id: ba999f06-6e0a-4c5e-ad1b-c6d635ab68e0
+  sha: 498ce06f23b98b3b6c67eea98c3bba0182dc8cd4
+  size: 809953
+vsphere_cpi_ruby/traveling-ruby-2.1.6-nokogiri-1.6.6.2-osx.tar.gz:
+  object_id: 3e00b73f-2885-4ac3-a18c-dfab8f1d0d42
+  sha: 1863630d3edd79245114796d1bd5f7d1248f7453
+  size: 790959
+vsphere_cpi_ruby/traveling-ruby-20150715-2.1.6-linux-x86_64.tar.gz:
+  object_id: 7e471d48-395a-40cd-a981-d887f6b3e36d
+  sha: 8b6a0ad191cdf8021092087a40b30bbabeb37bd4
+  size: 6382956
+vsphere_cpi_ruby/traveling-ruby-20150715-2.1.6-osx.tar.gz:
+  object_id: fbfd16ee-5cbf-4552-b910-30e1658b7464
+  sha: 37b3751db6677693ea05b1ea87702f00e7af23fc
+  size: 6631093

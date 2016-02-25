@@ -21,29 +21,18 @@ if [[ $? != 0 ]] ; then
   exit 1
 fi
 
-tar xzf vsphere_cpi_ruby/ruby-2.1.7.tar.gz
-(
-  set -e
-  cd ruby-2.1.7
-  LDFLAGS="-Wl,-rpath -Wl,${BOSH_INSTALL_TARGET}" CFLAGS='-fPIC' ./configure --prefix=${BOSH_INSTALL_TARGET} --disable-install-doc --with-opt-dir=/usr/local/opt/openssl:${BOSH_INSTALL_TARGET}
-  make
-  make install
-)
-if [[ $? != 0 ]] ; then
-  echo "Cannot install ruby"
+os_name="$(uname -s)"
+if [ "${os_name}" == "Darwin" ]; then
+  tar xzf vsphere_cpi_ruby/traveling-ruby-20150715-2.1.6-osx.tar.gz -C ${BOSH_INSTALL_TARGET}
+elif [ "${os_name}" == "Linux" ]; then
+  tar xzf vsphere_cpi_ruby/traveling-ruby-20150715-2.1.6-linux-x86_64.tar.gz -C ${BOSH_INSTALL_TARGET}
+else
+  # compile ruby from source?
+  >&2 echo "Unknown OS: ${os_name}"
   exit 1
 fi
 
-tar zxvf vsphere_cpi_ruby/rubygems-2.1.11.tgz
-(
-  set -e
-  cd rubygems-2.1.11
-
-  ${BOSH_INSTALL_TARGET}/bin/ruby setup.rb
-)
-if [[ $? != 0 ]] ; then
-  echo "Cannot install rubygems"
-  exit 1
+# Traveling Ruby on Linux does not ship with `bundle`
+if [ ! -f ${BOSH_INSTALL_TARGET}/bin/bundle ]; then
+  ${BOSH_INSTALL_TARGET}/bin/gem install vsphere_cpi_ruby/bundler-1.8.2.gem --local --no-ri --no-rdoc
 fi
-
-${BOSH_INSTALL_TARGET}/bin/gem install vsphere_cpi_ruby/bundler-1.8.2.gem --local --no-ri --no-rdoc

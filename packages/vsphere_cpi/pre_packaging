@@ -1,0 +1,29 @@
+set -e
+
+# This could be moved to a `vendor_dependencies` script if we're uncomfortable with
+# using pre_packaging
+
+blob_dir="${PWD}/vsphere_cpi_ruby/"
+
+pushd ${BUILD_DIR}/vsphere_cpi
+  # cache gems
+  rm -rf vendor/*
+  BUNDLE_IGNORE_CONFIG=1 bundle install --path vendor
+
+  rm -f vendor/*/*/cache/*
+  rm -rf vendor/ruby/*/extensions
+  find vendor/ruby/*/gems -name '*.so' -delete
+  find vendor/ruby/*/gems -name '*.bundle' -delete
+  find vendor/ruby/*/gems -name '*.o' -delete
+
+  os_name="$(uname -s)"
+  if [ "${os_name}" == "Darwin" ]; then
+    tar xvf "${blob_dir}/traveling-ruby-2.1.6-nokogiri-1.6.6.2-osx.tar.gz" -C vendor/ruby
+  elif [ "${os_name}" == "Linux" ]; then
+    # TODO: add linux to filename
+    tar xvf "${blob_dir}/traveling-ruby-2.1.6-nokogiri-1.6.6.2.tar.gz" -C vendor/ruby
+  else
+    >&2 echo "Unknown OS: ${os_name}"
+    exit 1
+  fi
+popd
