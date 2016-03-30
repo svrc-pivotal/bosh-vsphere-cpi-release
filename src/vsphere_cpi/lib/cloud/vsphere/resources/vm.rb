@@ -19,6 +19,10 @@ module VSphereCloud
         "<VM: #{@mob} / #{@cid}>"
       end
 
+      def host
+        @mob.runtime.host.name
+      end
+
       def cluster
         cluster = cloud_searcher.get_properties(host_properties['parent'], Vim::ClusterComputeResource, 'name', ensure_all: true)
         cluster['name']

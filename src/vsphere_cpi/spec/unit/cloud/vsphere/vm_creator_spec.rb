@@ -12,7 +12,7 @@ describe VSphereCloud::VmCreator do
   let(:agent_env) { instance_double('VSphereCloud::AgentEnv') }
   let(:file_provider) { instance_double('VSphereCloud::FileProvider') }
   let(:cloud_searcher) { instance_double('VSphereCloud::CloudSearcher') }
-  let(:datacenter) { instance_double(VSphereCloud::Resources::Datacenter) }
+  let(:datacenter) { instance_double(VSphereCloud::Resources::Datacenter, :name => 'datacenter name', :vm_folder => double('vm_folder', :mob => folder_mob), mob: datacenter_mob) }
 
   describe '#create' do
     let(:networks) do
@@ -34,9 +34,7 @@ describe VSphereCloud::VmCreator do
     let(:cluster_mob) { double(:cluster_mob) }
 
     let(:cluster) do
-      datacenter = double('datacenter', :name => 'datacenter name', :vm_folder => double('vm_folder', :mob => folder_mob), mob: datacenter_mob)
-
-      double('cluster', :datacenter => datacenter, :resource_pool => double('resource pool', :mob => resource_pool_mob), mob: cluster_mob, ephemeral_datastores: {datastore.name => datastore})
+      double('cluster', :resource_pool => double('resource pool', :mob => resource_pool_mob), mob: cluster_mob, ephemeral_datastores: {datastore.name => datastore})
     end
 
     let(:datastore) { double('datastore', mob: datastore_mob, name: 'fake-datastore-name') }
@@ -68,13 +66,7 @@ describe VSphereCloud::VmCreator do
       allow(cpi).to receive(:replicate_stemcell).with(cluster, datastore, 'stemcell_cid').and_return(replicated_stemcell_mob)
 
       snapshot = double('snapshot', :current_snapshot => current_snapshot)
-      stemcell_properties = { 'snapshot' => snapshot }
-      allow(cloud_searcher).to receive(:get_properties).with(
-        replicated_stemcell_mob,
-        VimSdk::Vim::VirtualMachine,
-        ['snapshot'],
-        ensure_all: true
-      ).and_return(stemcell_properties)
+      allow(replicated_stemcell_mob).to receive(:snapshot).and_return(snapshot)
 
       system_disk = double(:system_disk, controller_key: 'fake-controller-key')
       allow_any_instance_of(VSphereCloud::Resources::VM).to receive(:system_disk).and_return(system_disk)
