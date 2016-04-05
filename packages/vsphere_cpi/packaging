@@ -3,6 +3,8 @@
 set -e -x
 
 BOSH_PACKAGES_DIR=${BOSH_PACKAGES_DIR:-/var/vcap/packages}
+BUNDLE_CACHE_PATH="vendor/package"
+BUNDLE_WITHOUT="development:test"
 
 cp -a vsphere_cpi/* ${BOSH_INSTALL_TARGET}
 
