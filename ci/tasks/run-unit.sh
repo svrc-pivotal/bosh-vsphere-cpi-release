@@ -9,7 +9,7 @@ source ${release_dir}/ci/tasks/utils.sh
 source /etc/profile.d/chruby.sh
 chruby 2.1.2
 
-pushd "${release_dir}"
+pushd pull
   echo "running unit tests"
   pushd src/vsphere_cpi
     bundle install
