@@ -99,7 +99,7 @@ module VSphereCloud
       before do
         allow(vm_config).to receive(:name).and_return("fake-vm-name")
         allow(vm_config).to receive(:cluster_name).and_return("fake-cluster-name")
-        allow(vm_config).to receive(:datastore_name).and_return("fake-datastore-name")
+        allow(vm_config).to receive(:ephemeral_datastore_name).and_return("fake-datastore-name")
         allow(vm_config).to receive(:vsphere_networks).and_return(networks)
         allow(vm_config).to receive(:networks_spec).and_return(networks_spec)
         allow(vm_config).to receive(:stemcell_cid).and_return("fake-stemcell-cid")

@@ -188,17 +188,15 @@ module VSphereCloud
         )
         stemcell_size /= 1024 * 1024
 
-        disk_configurations = []
-        existing_disk_cids.each do |cid|
-          clean_cid, metadata = DiskMetadata.decode(cid)
-          disk = @datacenter.find_disk(clean_cid)
-          disk_configurations << {
-            cid: clean_cid,
-            size: disk.size_in_mb,
-            datastore_name: disk.datastore.name,
-            metadata: metadata,
-          }
+        disk_builder = DiskConfigs.new(
+          datacenter: @datacenter,
+          resource_pool: resource_pool,
+        )
+        disk_configurations = existing_disk_cids.map do |cid|
+          disk_builder.find_persistent_disk(cid)
         end
+        ephemeral_disk = disk_builder.new_ephemeral_disk
+        disk_configurations.push(ephemeral_disk)
 
         manifest_params = {
           resource_pool: resource_pool,
@@ -209,10 +207,8 @@ module VSphereCloud
             cid: stemcell_cid,
             size: stemcell_size
           },
-          available_clusters: @datacenter.clusters_hash,
+          global_clusters: @datacenter.clusters_hash,
           disk_configurations: disk_configurations,
-          global_ephemeral_datastore_pattern: @datacenter.ephemeral_pattern,
-          global_persistent_datastore_pattern: @datacenter.persistent_pattern,
         }
 
         vm_config = VmConfig.new(
@@ -296,10 +292,15 @@ module VSphereCloud
     def attach_disk(vm_cid, director_disk_cid)
       with_thread_name("attach_disk(#{vm_cid}, #{director_disk_cid})") do
         vm = vm_provider.find(vm_cid)
-        disk_cid, metadata = DiskMetadata.decode(director_disk_cid)
-        @logger.info("Attaching disk: #{disk_cid} (#{metadata}) on vm: #{vm_cid}")
 
-        disk = @datacenter.find_disk(disk_cid)
+        disk_configs = DiskConfigs.new(
+          datacenter: @datacenter,
+          resource_pool: nil,
+        )
+        disk_config = disk_configs.find_persistent_disk(director_disk_cid)
+
+        disk_to_attach = @datacenter.find_disk(disk_config[:cid])
+        @logger.info("Attaching disk: #{disk_config[:cid]} on vm: #{vm_cid}")
 
         all_datastores = @datacenter.datastores_hash
 
@@ -307,22 +308,21 @@ module VSphereCloud
         vm.accessible_datastore_names.each do |name|
           accessible_datastores[name] = all_datastores[name]
         end
-        disk_is_accessible = accessible_datastores.include?(disk.datastore.name)
+        disk_is_accessible = accessible_datastores.include?(disk_config[:existing_datastore_name])
 
-        persistent_pattern = Regexp.new(metadata['persistent_datastores_pattern'] || @datacenter.persistent_pattern)
-        disk_is_in_persistent_datastore = disk.datastore.name =~ persistent_pattern
+        disk_is_in_target_datastore = disk_config[:existing_datastore_name] =~ Regexp.new(disk_config[:target_datastore_pattern])
 
-        unless disk_is_accessible && disk_is_in_persistent_datastore
+        unless disk_is_accessible && disk_is_in_target_datastore
           datastore_picker = DatastorePicker.new
           datastore_picker.update(accessible_datastores)
-          datastore_name = datastore_picker.pick_datastore(disk.size_in_mb, persistent_pattern)
-          destination_datastore = @datacenter.find_datastore(datastore_name)
+          datastore_name = datastore_picker.pick_datastore_for_single_disk(disk_config)
 
-          disk = @datacenter.move_disk_to_datastore(disk, destination_datastore)
+          destination_datastore = @datacenter.find_datastore(datastore_name)
+          disk_to_attach = @datacenter.move_disk_to_datastore(disk_to_attach, destination_datastore)
         end
 
-        disk_config_spec = vm.attach_disk(disk)
-        add_disk_to_agent_env(vm, disk, disk_config_spec.device.unit_number)
+        disk_spec = vm.attach_disk(disk_to_attach)
+        add_disk_to_agent_env(vm, disk_to_attach, disk_spec.device.unit_number)
       end
     end
 
@@ -356,12 +356,16 @@ module VSphereCloud
           accessible_datastores = all_datastores
         end
 
-        persistent_pattern = Regexp.new(disk_pool_pattern(cloud_properties) || @datacenter.persistent_pattern)
-        @logger.info("Using persistent disk datastore pattern: #{persistent_pattern.inspect}")
+        disk_configs = DiskConfigs.new(
+          datacenter: @datacenter,
+          disk_pool: cloud_properties,
+        )
+        disk_config = disk_configs.new_persistent_disk(size_in_mb)
+        @logger.info("Using persistent disk datastore pattern: #{disk_config[:target_datastore_pattern]}")
 
         datastore_picker = DatastorePicker.new
         datastore_picker.update(accessible_datastores)
-        datastore_name = datastore_picker.pick_datastore(size_in_mb, persistent_pattern)
+        datastore_name = datastore_picker.pick_datastore_for_single_disk(disk_config)
         datastore = @datacenter.find_datastore(datastore_name)
         @logger.info("Using datastore #{datastore.name} to store persistent disk")
 
@@ -369,7 +373,7 @@ module VSphereCloud
         disk = @datacenter.create_disk(datastore, size_in_mb, disk_type)
         @logger.info("Created disk: #{disk.inspect}")
 
-        metadata = create_disk_metadata(cloud_properties) || nil
+        metadata = create_disk_metadata(cloud_properties)
         DiskMetadata.encode(disk.cid, metadata)
       end
     end
@@ -597,14 +601,15 @@ module VSphereCloud
     private
 
     def disk_pool_pattern(cloud_properties)
-      if cloud_properties['datastores'] && !cloud_properties['datastores'].empty?
-        "^(#{cloud_properties['datastores'].map { |pattern| Regexp.escape(pattern) }.join('|')})$"
-      end
     end
 
     def create_disk_metadata(cloud_properties)
-      if pattern = disk_pool_pattern(cloud_properties)
-        { 'persistent_datastores_pattern' => pattern }
+      if cloud_properties['datastores'] && !cloud_properties['datastores'].empty?
+        escaped_names = cloud_properties['datastores'].map { |pattern| Regexp.escape(pattern) }
+        pattern = "^(#{escaped_names.join('|')})$"
+        { target_datastore_pattern: pattern }
+      else
+        nil
       end
     end
 
