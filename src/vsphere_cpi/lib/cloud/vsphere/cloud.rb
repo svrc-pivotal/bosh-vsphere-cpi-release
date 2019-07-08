@@ -580,7 +580,7 @@ module VSphereCloud
         disk = vm.disk_by_cid(director_disk_cid.value)
         raise Bosh::Clouds::DiskNotAttached.new(true), "Disk '#{director_disk_cid.value}' is not attached to VM '#{vm_cid}'" if disk.nil?
 
-        vm.detach_disks([disk])
+        vm.detach_disks([disk], @datacenter.disk_path)
         begin
           delete_disk_from_agent_env(vm, director_disk_cid)
         rescue => e

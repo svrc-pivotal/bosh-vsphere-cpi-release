@@ -1676,6 +1676,7 @@ module VSphereCloud
         end
 
         before do
+          allow(datacenter).to receive(:disk_path).and_return("fake-disk-path")
           allow(cdrom).to receive_message_chain(:backing, :datastore, :name) { 'fake-datastore-name' }
           allow(vcenter_client).to receive(:get_cdrom_device).with(vm_mob).and_return(cdrom)
           allow(agent_env).to receive(:get_current_env).with(vm_mob, 'fake-datacenter').and_return(env)
@@ -1689,7 +1690,7 @@ module VSphereCloud
               vm_location,
               {'disks' => {'persistent' => {}}}
             )
-          expect(vm).to receive(:detach_disks).with([attached_disk])
+          expect(vm).to receive(:detach_disks).with([attached_disk], 'fake-disk-path')
           vsphere_cloud.detach_disk('vm-id', 'disk-cid')
         end
 
@@ -1700,7 +1701,7 @@ module VSphereCloud
 
           it 'does not update VM with new setting' do
             expect(agent_env).to_not receive(:set_env)
-            expect(vm).to receive(:detach_disks).with([attached_disk])
+            expect(vm).to receive(:detach_disks).with([attached_disk], 'fake-disk-path')
             vsphere_cloud.detach_disk('vm-id', 'disk-cid')
           end
         end
