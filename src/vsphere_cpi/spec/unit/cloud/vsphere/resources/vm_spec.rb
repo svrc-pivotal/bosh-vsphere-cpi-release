@@ -561,4 +561,35 @@ describe VSphereCloud::Resources::VM, fake_logger: true do
       expect(subject.to_s).to eq("(#{subject.class.name} (cid=\"vm-cid\"))")
     end
   end
+
+  describe '#disk_uuid_is_enabled' do
+    before(:each) do
+      expect(subject).to receive(:extra_config).and_return(extraconfig)
+    end
+
+    context 'when disk.enableUUID is absent' do
+      let(:extraconfig) do
+        [
+            OpenStruct.new(key: 'test', value: 'test-val'),
+            OpenStruct.new(key: 'disk.enableresize', value: 'TRUE'),
+        ]
+      end
+      it 'returns false' do
+        expect(subject.disk_uuid_is_enabled?).to eq(false)
+      end
+    end
+
+    context 'when disk.enableUUID is present' do
+      let(:extraconfig) do
+        [
+            OpenStruct.new(key: 'test', value: 'test-val'),
+            OpenStruct.new(key: 'disk.enableresize', value: 'True'),
+            OpenStruct.new(key: 'disk.enableUUID', value: 'TRUE'),
+        ]
+      end
+      it 'returns true' do
+        expect(subject.disk_uuid_is_enabled?).to eq(true)
+      end
+    end
+  end
 end

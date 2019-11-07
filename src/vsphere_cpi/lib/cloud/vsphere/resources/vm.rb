@@ -264,6 +264,12 @@ module VSphereCloud
         return disk_config_spec
       end
 
+      def disk_uuid_is_enabled?
+        extra_config.any? do |option|
+          option.key == 'disk.enableUUID' && option.value == "TRUE"
+        end
+      end
+
       def detach_disks(virtual_disks)
         reload
         check_for_nonpersistent_disk_modes

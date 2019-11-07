@@ -697,13 +697,12 @@ module VSphereCloud
       network_env
     end
 
-    def generate_disk_env(system_disk, ephemeral_disk, vm_config)
+    def generate_disk_env(system_disk, ephemeral_disk, disk_uuid_enabled)
 
       # When disk.enableUUID is true on the vmx options, consistent volume IDs are requested, and we can use them
       # to ensure the precise ephemeral volume is mounted.   This is mandatory for
       # cases where multiple SCSI controllers are present on the VM, as is common with Kubernetes VMs.
-
-      if vm_config.vmx_options['disk.enableUUID'] == "1"
+      if disk_uuid_enabled
         {
           'system' => system_disk.unit_number.to_s,
           'ephemeral' => { 'id' => ephemeral_disk.backing.uuid.downcase }, 
@@ -711,9 +710,9 @@ module VSphereCloud
         }
       else
         {
-        'system' => system_disk.unit_number.to_s,
-        'ephemeral' => ephemeral_disk.unit_number.to_s,
-        'persistent' => {}
+          'system' => system_disk.unit_number.to_s,
+          'ephemeral' => ephemeral_disk.unit_number.to_s,
+          'persistent' => {}
         }
       end
     end
@@ -881,22 +880,17 @@ module VSphereCloud
       # The BOSH agent already supports volume UUID identification, which is used below for unambiguous
       # BOSH disk association.   
 
-      for options in vm.extra_config
-        if options.key == 'disk.enableUUID'
-          if options.value == "TRUE"
-            # We have to query the VIM API to learn the freshly attached disk UUID.   We must also pick the specific
-            # BOSH-managed independent persistent disk and avoid any non-BOSH peristent disks.  Also due to Linux
-            # filsystem case-sensitivity, ensure that the UUID is downcased as VIM returns it upper case.
-            disk = vm.disk_by_cid(director_disk_cid.value)
-            uuid = disk.backing.uuid.downcase
-            logger.info("adding disk to env, disk.enableUUID is TRUE, using volume uuid #{uuid} for mounting")
-            env['disks']['persistent'][director_disk_cid.raw] = {"id" => uuid}
-            break
-          else
-            logger.info("adding disk to env, disk.enableUUID is FALSE, using relative device number #{device_unit_number.to_s} for mounting")
-            break
-          end         
-        end        
+
+      if vm.disk_uuid_is_enabled?
+        # We have to query the VIM API to learn the freshly attached disk UUID. We must also pick the specific
+        # BOSH-managed independent persistent disk and avoid any non-BOSH peristent disks.  Also due to Linux
+        # filsystem case-sensitivity, ensure that the UUID is downcased as VIM returns it upper case.
+        disk = vm.disk_by_cid(director_disk_cid.value)
+        uuid = disk.backing.uuid.downcase
+        logger.info("adding disk to env, disk.enableUUID is TRUE, using volume uuid #{uuid} for mounting")
+        env['disks']['persistent'][director_disk_cid.raw] = {"id" => uuid}
+      else
+        logger.info("adding disk to env, disk.enableUUID is FALSE, using relative device number #{device_unit_number.to_s} for mounting")
       end
 
       location = { datacenter: @datacenter.name, datastore: get_vm_env_datastore(vm), vm: vm.cid }
