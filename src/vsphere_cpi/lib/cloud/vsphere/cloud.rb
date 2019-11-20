@@ -703,6 +703,7 @@ module VSphereCloud
       # to ensure the precise ephemeral volume is mounted.   This is mandatory for
       # cases where multiple SCSI controllers are present on the VM, as is common with Kubernetes VMs.
       if disk_uuid_enabled
+        logger.info("Using ephemeral disk UUID #{ephemeral_disk.backing.uuid.downcase}")
         {
           'system' => system_disk.unit_number.to_s,
           'ephemeral' => { 'id' => ephemeral_disk.backing.uuid.downcase }, 
@@ -710,6 +711,7 @@ module VSphereCloud
         }
       else
         {
+          logger.info("Using ephemeral disk unit number #{ephemeral_disk.unit_number.to_s}")
           'system' => system_disk.unit_number.to_s,
           'ephemeral' => ephemeral_disk.unit_number.to_s,
           'persistent' => {}
