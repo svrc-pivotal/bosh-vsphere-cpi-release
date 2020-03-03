@@ -447,7 +447,11 @@ module VSphereCloud
         end
 
         # Delete env.iso and VM specific files managed by the director
-        @agent_env.clean_env(vm.mob) if vm.cdrom
+        begin
+          @agent_env.clean_env(vm.mob) if vm.cdrom
+        rescue => e
+          logger.info("Failed to clean env.iso, likely sVmotioned VM: #{e.message}")
+        end
 
         if @config.nsxt_enabled?
           begin

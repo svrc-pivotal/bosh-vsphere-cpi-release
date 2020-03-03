@@ -333,27 +333,6 @@ module VSphereCloud
         end
       end
 
-      # Apply new storage policy to VM, system disk and ephemeral disk.
-
-      def apply_storage_policy(policy)
-        profile_spec = Resources::VM.create_profile_spec(policy)
-        disks = [system_disk, ephemeral_disk]
-        device_specs = disks.map {|disk| Resources::VM.create_edit_device_spec(disk)}
-        device_specs.each do |d|
-          d.profile = [profile_spec]
-        end
-        vmconfig = VimSdk::Vim::Vm::ConfigSpec.new
-        vmconfig.device_change = device_specs
-        vmconfig.vm_profile = profile_spec
-        @client.reconfig_vm(@mob, vmconfig)
-      end
-
-      def self.create_profile_spec(policy)
-        profile_spec = VimSdk::Vim::Vm::DefinedProfileSpec.new
-        profile_spec.profile_id = policy.profile_id.unique_id
-        profile_spec
-      end
-
       def self.create_delete_device_spec(device, options = {})
         device_config_spec = Vim::Vm::Device::VirtualDeviceSpec.new
         device_config_spec.device = device
