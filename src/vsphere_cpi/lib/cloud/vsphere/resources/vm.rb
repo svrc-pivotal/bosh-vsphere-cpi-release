@@ -292,11 +292,6 @@ module VSphereCloud
             if has_persistent_disk_property_mismatch?(virtual_disk) && !@client.disk_path_exists?(@mob, disk_property.value)
               logger.info('Persistent disk was moved: moving disk to expected location')
               disks_to_move_old_path << virtual_disk              
-            else 
-              if !@client.disk_path_exists?(@mob, disk_property.value)
-                logger.info('Persistent disk is BOSH-managed but old path is missing: moving disk to expected location')
-                disks_to_move_old_path << virtual_disk
-              end
             end
           end
         end
