@@ -294,8 +294,8 @@ module VSphereCloud
               disks_to_move_old_path << virtual_disk              
             else 
               if !@client.disk_path_exists?(@mob, disk_property.value)
-                logger.info('Persistent disk is BOSH-managed but old path is missing: moving disk to current location on same datastore')
-                disks_to_move_current_path << virtual_disk
+                logger.info('Persistent disk is BOSH-managed but old path is missing: moving disk to expected location')
+                disks_to_move_old_path << virtual_disk
               end
             end
           end

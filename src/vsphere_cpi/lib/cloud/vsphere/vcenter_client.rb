@@ -363,7 +363,7 @@ module VSphereCloud
       return false if vm_disk_infos.empty?
 
       true
-    rescue VimSdk::SoapError, FileNotFoundException
+    rescue 
       false
     end
 
